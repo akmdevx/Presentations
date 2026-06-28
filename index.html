@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wave Dark Matter Simulations with Physics-Informed ML — EAS 2026</title>
+
+  <!-- Reveal.js CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css" />
+  <!-- Math rendering -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" />
+
+  <style>
+    /* ── palette ─────────────────────────────────────────── */
+    :root {
+      --bg-dark:   #0b0f1a;
+      --bg-card:   #121829;
+      --accent:    #5e9cf5;
+      --accent2:   #a78bfa;
+      --gold:      #f4c542;
+      --text:      #e8eaf0;
+      --muted:     #8899bb;
+      --border:    rgba(94,156,245,.25);
+    }
+
+    /* ── global ──────────────────────────────────────────── */
+    .reveal-viewport { background: var(--bg-dark); }
+    .reveal { font-family: 'Segoe UI', Arial, sans-serif; color: var(--text); }
+
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-weight: 700;
+      color: #fff;
+      text-transform: none;
+      letter-spacing: .02em;
+    }
+    .reveal h2 { font-size: 1.5em; color: var(--accent); margin-bottom: .4em; }
+    .reveal h3 { font-size: 1.1em; color: var(--accent2); }
+
+    .reveal section { text-align: left; }
+    .reveal ul, .reveal ol { margin-left: 1.2em; }
+    .reveal li { margin: .35em 0; font-size: .78em; line-height: 1.5; }
+    .reveal p  { font-size: .78em; line-height: 1.6; margin: .4em 0; }
+
+    /* ── helpers ─────────────────────────────────────────── */
+    .cols    { display:flex; gap:1.4em; align-items:flex-start; }
+    .col     { flex:1; }
+    .col-40  { flex:.4; }
+    .col-60  { flex:.6; }
+    .col-55  { flex:.55; }
+    .col-45  { flex:.45; }
+
+    .slide-img {
+      width:100%; border-radius:8px;
+      border:1px solid var(--border);
+      box-shadow:0 4px 20px rgba(0,0,0,.5);
+    }
+    .slide-img-center {
+      display:block; margin:auto;
+      max-width:90%; border-radius:8px;
+      border:1px solid var(--border);
+      box-shadow:0 4px 20px rgba(0,0,0,.5);
+    }
+
+    .tag {
+      display:inline-block; padding:.15em .55em;
+      border-radius:4px; font-size:.65em; font-weight:700;
+      background:rgba(94,156,245,.18); color:var(--accent);
+      border:1px solid var(--border); margin:.1em .2em;
+    }
+    .tag-purple { background:rgba(167,139,250,.15); color:var(--accent2); border-color:rgba(167,139,250,.3); }
+    .tag-gold   { background:rgba(244,197,66,.12);  color:var(--gold);    border-color:rgba(244,197,66,.3); }
+
+    .card {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:10px; padding:.8em 1em; margin:.5em 0;
+    }
+    .card h3 { margin:0 0 .3em; font-size:.85em; }
+    .card p, .card li { font-size:.72em; }
+
+    .badge {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:2em; height:2em; border-radius:50%;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:#fff; font-weight:700; font-size:1em; margin-right:.4em;
+      flex-shrink:0;
+    }
+
+    .eq {
+      background:rgba(255,255,255,.04); border:1px solid var(--border);
+      border-radius:8px; padding:.6em 1em; margin:.5em 0;
+      font-size:.72em; text-align:center;
+    }
+
+    .cite {
+      font-size:.6em; color:var(--muted); font-style:italic;
+    }
+
+    /* ── title slide ─────────────────────────────────────── */
+    .title-slide {
+      position:relative;
+      background: radial-gradient(ellipse at 60% 40%, rgba(94,156,245,.12) 0%, transparent 60%),
+                  radial-gradient(ellipse at 20% 80%, rgba(167,139,250,.08) 0%, transparent 50%);
+    }
+    .title-slide h1 { font-size:1.4em; line-height:1.3; color:#fff; }
+    .title-slide .subtitle { font-size:.82em; color:var(--accent); margin:.6em 0; }
+    .title-slide .author { font-size:.75em; color:var(--text); margin:.3em 0; }
+    .title-slide .date   { font-size:.68em; color:var(--muted); }
+
+    /* ── section divider ─────────────────────────────────── */
+    .section-slide {
+      background: linear-gradient(135deg, #0f1933 0%, #1a0f33 100%);
+    }
+    .section-num {
+      font-size:4em; font-weight:900; opacity:.12; position:absolute;
+      right:.3em; top:.15em; line-height:1;
+    }
+
+    /* ── takeaway ────────────────────────────────────────── */
+    .key-result {
+      background:linear-gradient(135deg,rgba(94,156,245,.1),rgba(167,139,250,.1));
+      border:1px solid rgba(94,156,245,.4);
+      border-radius:10px; padding:.7em 1em; margin:.6em 0;
+      font-size:.75em;
+    }
+
+    /* progress dots ─────────────────────────────────────── */
+    .reveal .progress { height:3px; background:rgba(255,255,255,.1); }
+    .reveal .progress span { background:var(--accent); }
+
+    /* slide number */
+    .reveal .slide-number { font-size:.55em; }
+
+    /* fragment animations */
+    .reveal .fragment.fade-up { transform: translateY(20px); opacity:0; }
+    .reveal .fragment.fade-up.visible { transform: translateY(0); opacity:1; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 1 — TITLE
+════════════════════════════════════════════════════ -->
+<section class="title-slide">
+  <div class="cols" style="align-items:center; gap:2em;">
+    <div class="col-60">
+      <p class="date">EAS Annual Meeting 2026 &nbsp;·&nbsp; 1 July 2026</p>
+      <h1>Wave Dark Matter Simulations with Physics-Informed Machine Learning</h1>
+      <p class="author" style="margin-top:.8em;">
+        <strong>Ashutosh K. Mishra</strong> <span class="tag">PhD Student</span><br/>
+        Advisor: Emma Tolley<br/>
+        EPFL &nbsp;|&nbsp; <a href="mailto:ashutosh.mishra@epfl.ch" style="color:var(--accent)">ashutosh.mishra@epfl.ch</a>
+      </p>
+      <div style="margin-top:1em; display:flex; gap:.5em; flex-wrap:wrap;">
+        <span class="tag">FDM Simulations</span>
+        <span class="tag tag-purple">PINNs</span>
+        <span class="tag tag-gold">Neural Operators</span>
+      </div>
+    </div>
+    <div class="col-40">
+      <img src="images/image5.png" alt="FDM Simulation" class="slide-img" />
+      <img src="images/image3.png" alt="FDM density" class="slide-img" style="margin-top:.6em;" />
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 2 — Small Scale Challenges in CDM
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Small Scale Challenges in CDM Model</h2>
+  <div class="cols">
+    <div class="col-55">
+      <img src="images/image7.png" alt="CDM small scale problems" class="slide-img" />
+    </div>
+    <div class="col-45">
+      <img src="images/image8.png" alt="CDM small scale illustration" class="slide-img" />
+      <div class="card" style="margin-top:.8em;">
+        <p style="color:var(--gold); font-weight:700;">Potential Problem:</p>
+        <p>Absence of Baryonic Processes (Feedback, Formation) and/or <strong>Nature of DM</strong>!</p>
+        <p class="cite">arXiv:2206.05295</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 3 — Alternative Dark Matter Models
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Alternative Dark Matter Models</h2>
+  <div class="cols">
+    <div class="col-60">
+      <img src="images/image9.png" alt="DM model space" class="slide-img" />
+    </div>
+    <div class="col-40">
+      <div class="card">
+        <h3>Warm Dark Matter (WDM)</h3>
+        <p>Favored mass range in tension with Ly&#945; observation &amp; abundance of high-z galaxies</p>
+        <p class="tag tag-purple">Strong microlensing constraints</p>
+      </div>
+      <div class="card">
+        <h3>Self-Interacting DM (SIDM)</h3>
+        <p>Needs fine-tuned cross-sections &amp; struggles to explain full range of observations</p>
+        <p class="tag">No empirical detection</p>
+      </div>
+      <div class="key-result">&#10024; <strong>Fuzzy DM</strong> — still a viable window under observational constraints!</div>
+      <p class="cite">arXiv:2408.00082</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 4 — Fuzzy Dark Matter
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Fuzzy Dark Matter (FDM)</h2>
+  <div class="cols">
+    <div class="col-60">
+      <div class="card">
+        <ul>
+          <li>Extremely light scalar particle (<em>m</em> ∼ 10<sup>−20</sup>–10<sup>−22</sup> eV)</li>
+          <li>Non-thermally produced (not ultra-hot)</li>
+          <li>Clumps to form <strong>Bose-Einstein Condensate (BEC)</strong></li>
+          <li>Quantum effects counteract gravity at small scales</li>
+          <li>Tiny mass → large de Broglie wavelength (~1/m) → <strong>macroscopic quantum effects at kpc scales</strong></li>
+        </ul>
+      </div>
+      <p style="margin-top:.6em; font-size:.68em; color:var(--muted);">Also known as: F(C)DM, BECDM, ULDM, ELBDM, ultra-light axion DM (ULA, ALP)</p>
+    </div>
+    <div class="col-40">
+      <img src="images/image4.png" alt="FDM wavelength illustration" class="slide-img"/>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 5 — FDM Density (visual only)
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>FDM Density Field</h2>
+  <img src="images/image11.png" alt="FDM density field" class="slide-img-center" style="max-height:75vh;"/>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 6 — 21cm Power Spectrum
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>FDM Potential Signature in 21cm Power Spectrum</h2>
+  <img src="images/image12.png" alt="21cm power spectrum" class="slide-img-center" style="max-height:65vh;"/>
+  <div class="key-result" style="text-align:center;">Distinct power suppression at high redshift!</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 7 — FDM Mass Constraints
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>FDM Mass Constraints Based on P<sub>Lin</sub> 🤔</h2>
+  <img src="images/image13.png" alt="FDM mass constraints" class="slide-img-center" style="max-height:60vh;"/>
+  <div class="key-result" style="text-align:center;">Need <strong>Full Non-Linear Simulations</strong> to get reliable constraints!</div>
+  <p class="cite" style="text-align:center;">May &amp; Springel 2021</p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 8 — FDM Limit Ruled Out?
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>FDM Limit Ruled Out!? (From Ultra-Dwarf Galaxies)</h2>
+  <div class="cols">
+    <div class="col-55">
+      <img src="images/image14.png" alt="Ultra-dwarf galaxy FDM constraint" class="slide-img"/>
+    </div>
+    <div class="col-45">
+      <div class="card">
+        <p style="color:var(--gold); font-weight:700;">Result:</p>
+        <p><em>m</em> &gt; 8 × 10<sup>−18</sup> eV (95% C.L.)</p>
+        <p>Bound is conservative: perturbative heating underestimates full SP result → true limit likely stronger!</p>
+      </div>
+      <img src="images/image15.png" alt="Constraint plot" class="slide-img" style="margin-top:.6em;"/>
+      <div class="key-result" style="margin-top:.6em;">⚠️ <strong>Single Field FDM out of the window!</strong></div>
+      <p class="cite">May et al. 2025 (arXiv:2509.02781)</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 9 — Two Field FDM
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Diversity of Halos in Two-Field FDM Cosmology 🧐</h2>
+  <img src="images/image17.png" alt="Two-field FDM halo diversity" class="slide-img-center" style="max-height:65vh;"/>
+  <div class="key-result" style="text-align:center;">2-Field FDM can resolve small-scale tensions!</div>
+  <p class="cite" style="text-align:center;">arXiv:2408.00827</p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 10 — Governing Equations
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Governing Equations</h2>
+  <div class="cols">
+    <div class="col-55">
+      <h3>A. Wave Formalism (Schrödinger–Poisson)</h3>
+      <div class="eq">
+        <em>i&#8463; ∂<sub>t</sub>ψ = −(&#8463;²/2m)∇²ψ + mVψ</em><br/>
+        <em>∇²V = 4πGm(|ψ|² − |ψ₀|²)</em>
+      </div>
+      <h3 style="margin-top:.8em;">B. Madelung Formalism (Fluid Representation)</h3>
+      <div class="eq">
+        <em>∂<sub>t</sub>ρ + ∇·(ρ<strong>v</strong>) = 0</em><br/>
+        <em>∂<sub>t</sub><strong>v</strong> + (<strong>v</strong>·∇)<strong>v</strong> = −(1/m)∇(V − Q)</em><br/>
+        <em>Q = −(&#8463;²/2m)(∇²√ρ/√ρ) — "Quantum Pressure"</em>
+      </div>
+      <p class="cite">Q ill-defined at ρ=0!</p>
+    </div>
+    <div class="col-45">
+      <div class="card">
+        <h3>Transformation</h3>
+        <p>ψ = √(ρ/m) · e<sup>iS</sup></p>
+        <p>ρ = m|ψ|² &nbsp;&nbsp; <strong>v</strong> = (&#8463;/m)∇S</p>
+      </div>
+      <div class="card" style="margin-top:.8em;">
+        <p style="color:var(--accent2);">Mean Field Interpretation:</p>
+        <p>Single Macroscopic Wave Function of BEC</p>
+      </div>
+      <img src="images/image18.png" alt="Equations illustration" class="slide-img" style="margin-top:.8em;"/>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 11 — FDM Simulations
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Fuzzy Dark Matter Simulations</h2>
+  <div class="cols">
+    <div class="col-55">
+      <img src="images/image20.png" alt="SP vs fluid solver comparison" class="slide-img"/>
+    </div>
+    <div class="col-45">
+      <div class="key-result">
+        <strong>Fluid solver unable to capture interference effects!</strong><br/>
+        → Stick to SP equations for evolution.
+      </div>
+      <p class="cite" style="margin-top:.5em;">A. Kunkel et al. 2024</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 12 — Challenges
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Challenges in Simulating Fuzzy Dark Matter</h2>
+  <div class="cols">
+    <div class="col-55">
+      <img src="images/image23.png" alt="Scale challenge" class="slide-img"/>
+      <img src="images/image24.png" alt="Scale challenge 2" class="slide-img" style="margin-top:.5em;"/>
+    </div>
+    <div class="col-45">
+      <div class="card">
+        <ul>
+          <li>Both Mpc-scale and kpc-scale must be resolved for accurate evolution</li>
+          <li>Time step scaling: <em>Δt ∼ Δx²</em></li>
+          <li>Hydrodynamical codes used in N-body sims (but fluid formulation for FDM?)</li>
+          <li>Sims so far restricted to <strong>small box sizes ≲10 Mpc/h</strong></li>
+        </ul>
+      </div>
+      <p class="cite">Schive, Chiueh &amp; Broadhurst (2014)</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 13 — Challenges (adaptive mesh)
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Challenges — Adaptive Mesh Refinement</h2>
+  <div class="cols">
+    <div class="col-55">
+      <img src="images/image27.png" alt="AMR comparison" class="slide-img"/>
+      <img src="images/image28.png" alt="Resolution requirement" class="slide-img" style="margin-top:.5em;"/>
+    </div>
+    <div class="col-45">
+      <div class="card">
+        <ul>
+          <li>Both Mpc-scale and kpc-scale must be resolved for accurate evolution</li>
+          <li><em>Δt ∼ Δx²</em> — extremely expensive</li>
+          <li>Simulations restricted to small box sizes of 10 Mpc/h</li>
+        </ul>
+      </div>
+      <div class="key-result" style="margin-top:.8em;">→ Need new approaches to scale simulations!</div>
+      <p class="cite">Schive, Chiueh &amp; Broadhurst (2014)</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 14 — Physics-Informed Neural Networks
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Physics-Informed Neural Networks (PINNs)</h2>
+  <div class="cols">
+    <div class="col-60">
+      <img src="images/image29.png" alt="PINN diagram" class="slide-img"/>
+      <div class="eq" style="margin-top:.8em;">
+        <em>D[NN(X,θ); λ] = f(X),  X ∈ Ω</em><br/>
+        <em>B[NN(X,θ)] = g(X),  X ∈ ∂Ω</em>
+      </div>
+    </div>
+    <div class="col-40">
+      <div class="card">
+        <p>Custom Loss Function with PDE and boundary conditions as additional constraints</p>
+      </div>
+      <div class="card" style="margin-top:.6em;">
+        <p style="color:var(--gold);">✓ Pretty successful in Fluid and Climate Simulations!</p>
+      </div>
+      <p class="cite" style="margin-top:.5em;">Raissi, Yazdani, Karniadakis 2020<br/>Adapted from F. Pioch et al. 2023</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 15 — Outline
+════════════════════════════════════════════════════ -->
+<section class="section-slide">
+  <h2>Outline of Approaches</h2>
+  <div class="cols" style="margin-top:.8em;">
+    <div class="col">
+      <div class="card">
+        <div style="display:flex; align-items:flex-start; gap:.7em;">
+          <div class="badge">01</div>
+          <div>
+            <h3>Coordinate-Based Approach</h3>
+            <p>Directly solve the Schrödinger–Poisson (SP) equations using <strong>Physics-Informed Neural Networks (PINNs)</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div style="display:flex; align-items:flex-start; gap:.7em;">
+          <div class="badge" style="background:linear-gradient(135deg,var(--accent2),#6d28d9);">02</div>
+          <div>
+            <h3>Physics-Informed Generative Modeling</h3>
+            <ul>
+              <li>Interpolate and simulate FDM cosmological boxes across multiple redshifts</li>
+              <li>Learn mapping from low-res FDM to high-res FDM with physics-informed generative model</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 16 — Outline (with visual)
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Roadmap</h2>
+  <div class="cols">
+    <div class="col-55">
+      <img src="images/image34.png" alt="Roadmap diagram" class="slide-img"/>
+    </div>
+    <div class="col-45">
+      <div class="card">
+        <div style="display:flex; gap:.6em;">
+          <div class="badge">01</div>
+          <p><strong>SPINN:</strong> Coordinate-based PINNs for SP equations</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:.5em;">
+        <div style="display:flex; gap:.6em;">
+          <div class="badge" style="background:linear-gradient(135deg,var(--accent2),#6d28d9);">02</div>
+          <p><strong>Generative Modeling:</strong> Physics-informed super-resolution &amp; evolution</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 17–20 — SPINN (progressive build)
+════════════════════════════════════════════════════ -->
+<section>
+  <section>
+    <h2>Schrödinger–Poisson Informed Neural Networks (SPINN)</h2>
+    <div class="cols">
+      <div class="col-45">
+        <div class="card" style="text-align:center; padding:1.5em;">
+          <p style="font-size:.8em;">Inputs:</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:.4em; margin:.5em 0;">
+            <div class="tag">x</div><div class="tag">y</div>
+            <div class="tag">z</div><div class="tag">t</div>
+          </div>
+          <p style="font-size:1.5em; color:var(--accent);">⬇ Neural Network ⬇</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.4em;">
+            <div class="tag tag-purple">Re(ψ)</div>
+            <div class="tag tag-purple">Im(ψ)</div>
+            <div class="tag tag-gold">V</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-55">
+        <div class="eq">
+          <em>iℏ ∂<sub>t</sub>ψ = −(ℏ²/2m)∇²ψ + mVψ</em><br/>
+          <em>∇²V = 4πGm(|ψ|² − |ψ₀|²)</em>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section>
+    <h2>SPINN — Automatic Differentiation</h2>
+    <div class="cols">
+      <div class="col-45">
+        <div class="card" style="text-align:center; padding:1.5em;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:.4em; margin-bottom:.5em;">
+            <div class="tag">x</div><div class="tag">y</div>
+            <div class="tag">z</div><div class="tag">t</div>
+          </div>
+          <p style="font-size:1.2em; color:var(--accent);">⬇ Neural Network ⬇</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.4em;">
+            <div class="tag tag-purple">Re(ψ)</div>
+            <div class="tag tag-purple">Im(ψ)</div>
+            <div class="tag tag-gold">V</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-55">
+        <div class="card">
+          <p>Use <strong>automatic differentiation</strong> to calculate:</p>
+          <p><em>∂<sub>t</sub>ψ,  ∇²ψ,  ∇²V,  ...</em></p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section>
+    <h2>SPINN — Physics Loss</h2>
+    <div class="cols">
+      <div class="col-45">
+        <div class="card" style="text-align:center; padding:1.5em;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:.4em; margin-bottom:.5em;">
+            <div class="tag">x</div><div class="tag">y</div>
+            <div class="tag">z</div><div class="tag">t</div>
+          </div>
+          <p style="font-size:1.2em; color:var(--accent);">⬇ Neural Network ⬇</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.4em;">
+            <div class="tag tag-purple">Re(ψ)</div>
+            <div class="tag tag-purple">Im(ψ)</div>
+            <div class="tag tag-gold">V</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-55">
+        <div class="eq">
+          <strong>Physics Loss:</strong><br/>
+          <em>ℒ = |i∂ψ/∂t + ∇²ψ/2 − mVψ|² + |∇²V − |ψ|² + 1|²</em>
+        </div>
+        <div class="card" style="margin-top:.6em;">
+          <p>+ Loss for initial and boundary conditions</p>
+          <p>Use <strong>backpropagation</strong> to minimize all losses jointly</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 21 — Density Predictions
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>SPINN Density Predictions</h2>
+  <div class="cols">
+    <div class="col-60">
+      <img src="images/image35.png" alt="1D and 3D NN predictions" class="slide-img"/>
+    </div>
+    <div class="col-40">
+      <div class="card">
+        <p style="color:var(--gold);">1D NN vs 1D Sim</p>
+        <p style="color:var(--accent);">3D NN vs 3D Sim</p>
+      </div>
+      <div class="key-result" style="margin-top:.8em;">
+        Unsupervised neural network accurately predicting FDM dynamics using <strong>just physics constraints and initial conditions</strong>!
+      </div>
+      <p class="cite">Mishra &amp; Tolley, ApJ 2025</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 22 — Cosmological FDM
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>What About Cosmological FDM Simulations?</h2>
+  <div class="cols">
+    <div class="col-50">
+      <div class="card">
+        <div style="display:flex; gap:.5em; align-items:flex-start;">
+          <div class="badge">01</div>
+          <div>
+            <h3>Super-Resolution Model</h3>
+            <p>Learn the low-res → high-res mapping:</p>
+            <div class="eq"><em>{ψ<sub>low</sub>(x), a} → ψ<sub>high</sub>(x) @ a</em></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:.6em;">
+        <div style="display:flex; gap:.5em; align-items:flex-start;">
+          <div class="badge" style="background:linear-gradient(135deg,var(--accent2),#6d28d9);">02</div>
+          <div>
+            <h3>Evolution Model</h3>
+            <p>Physics-informed generative models to simulate/interpolate across redshifts:</p>
+            <div class="eq"><em>{ψ₀(x), a} → ψ<sub>a</sub>(x) @ a</em></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-50">
+      <img src="images/image38.png" alt="Approach diagram" class="slide-img"/>
+      <img src="images/image39.png" alt="Scale factor" class="slide-img" style="margin-top:.5em;"/>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 23 — UNet Architecture
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Physics-Informed UNet Architecture</h2>
+  <img src="images/image40.png" alt="UNet architecture diagram" class="slide-img-center" style="max-height:75vh;"/>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 24 — FDM Simulation Data
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>FDM Simulation with Finer Time Steps (1 Mpc Boxes)</h2>
+  <img src="images/image41.png" alt="FDM density snapshots across time" class="slide-img-center" style="max-height:55vh;"/>
+  <p style="text-align:center; font-size:.72em;">Projected FDM density snapshots across time: z = 127 (left) → z = 0 (right)</p>
+  <p class="cite" style="text-align:center;">Simulation with Jaxion (P. Mocz)</p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 25 — Data Description
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Data for Physics-Informed UNet</h2>
+  <div class="cols">
+    <div class="col-60">
+      <div class="card">
+        <ul>
+          <li>1 Mpc/h FDM boxes at redshifts z = 127 to z = 0 simulated with <strong>Jaxion</strong> (P. Mocz)</li>
+          <li>Fine-step simulations with <em>da</em> = 10<sup>−5</sup>/10<sup>−6</sup> (essential!)</li>
+          <li>Original resolution: <strong>256³</strong> voxels</li>
+          <li>Multiple realizations of ICs</li>
+        </ul>
+      </div>
+      <div class="cols" style="margin-top:.8em;">
+        <div class="card col">
+          <h3>Evolution Task</h3>
+          <p>Downsampled to <strong>64³</strong> voxels</p>
+        </div>
+        <div class="card col">
+          <h3>Super-Resolution</h3>
+          <p>Low-res: <strong>32³</strong> → High-res: <strong>128³</strong></p>
+        </div>
+      </div>
+    </div>
+    <div class="col-40">
+      <img src="images/image43.png" alt="Data schema" class="slide-img"/>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 26 — Cosmo-SPINN
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Cosmo-SPINN Trained on 1 Mpc Boxes</h2>
+  <div class="cols">
+    <div class="col-55">
+      <div class="eq">
+        <strong>Cosmological SP equations (comoving):</strong><br/>
+        <em>iℏ ∂<sub>τ</sub>ψ<sub>c</sub> = −(1/2m)∇<sub>c</sub>²ψ<sub>c</sub> + mVψ<sub>c</sub></em><br/>
+        <em>∇<sub>c</sub>²Φ<sub>c</sub> = 4πGam|ψ<sub>c</sub>|² − ⟨|ψ<sub>c</sub>|²⟩</em>
+      </div>
+      <div class="card" style="margin-top:.6em;">
+        <p>Introduce supercomoving time: dτ = a<sup>−2</sup>dt<br/>
+        Redefine V ≡ aΦ<sub>c</sub></p>
+      </div>
+    </div>
+    <div class="col-45">
+      <div class="card">
+        <p>Training scale factor range:</p>
+        <p style="font-size:.72em;"><em>a<sub>single</sub> ∈ [0.149, 0.157]</em> (z = 5.71 to 5.37)</p>
+        <p style="font-size:.72em;"><em>a<sub>multi</sub> ∈ [0.0798, 0.803]</em></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 27 — Physics Residuals Comparison
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Super-Resolution Model: Physics Residuals Comparison</h2>
+  <div class="cols">
+    <div class="col-55">
+      <img src="images/image44.png" alt="SP residuals" class="slide-img"/>
+      <p style="font-size:.65em; text-align:center; color:var(--muted);">SP Residuals</p>
+    </div>
+    <div class="col-45">
+      <img src="images/image45.png" alt="DKD residuals" class="slide-img"/>
+      <p style="font-size:.65em; text-align:center; color:var(--muted);">DKD Residuals</p>
+    </div>
+  </div>
+  <div class="cols" style="margin-top:.6em;">
+    <div class="card col" style="border-color:rgba(167,139,250,.3);">
+      <p>⚠️ <strong>SP:</strong> Stronger physics enforcement, reduced convergence stability</p>
+    </div>
+    <div class="card col" style="border-color:rgba(94,156,245,.4);">
+      <p>✓ <strong>DKD:</strong> More robust regularization, consistent train–test behaviour</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 28 — Super-res Results (SP)
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Super-Resolution Model: Results with SP Residuals</h2>
+  <img src="images/image46.png" alt="Super-resolution SP results" class="slide-img-center" style="max-height:60vh;"/>
+  <div class="cols" style="margin-top:.5em;">
+    <div class="tag" style="flex:1; text-align:center;">✓ Sharper filaments and denser cores</div>
+    <div class="tag" style="flex:1; text-align:center;">✓ High-k power well recovered</div>
+    <div class="tag tag-gold" style="flex:1; text-align:center;">★ Closest match to HR target</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 29 — Super-res Results (DKD)
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Super-Resolution Model: Results with DKD Residuals</h2>
+  <img src="images/image48.png" alt="Super-resolution DKD results" class="slide-img-center" style="max-height:55vh;"/>
+  <div class="cols" style="margin-top:.5em;">
+    <div class="tag" style="flex:1; text-align:center;">✓ Recovers large-scale morphology</div>
+    <div class="tag" style="flex:1; text-align:center;">~ Smoother density reconstruction</div>
+    <div class="tag tag-purple" style="flex:1; text-align:center;">↓ Slight suppression of high-k power</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 30 — Power Spectrum Statistics
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Super-Resolution: Power Spectrum Statistics</h2>
+  <div class="cols">
+    <div class="col-60">
+      <img src="images/image49.png" alt="Power spectrum statistics" class="slide-img"/>
+    </div>
+    <div class="col-40">
+      <div class="card" style="border-color:rgba(244,197,66,.3);">
+        <p>🔵 <strong>SP:</strong> Better small-scale recovery, larger variance</p>
+      </div>
+      <div class="card" style="margin-top:.5em;">
+        <p>🟣 <strong>DKD:</strong> Lower variance, smoother reconstruction</p>
+      </div>
+      <div class="key-result" style="margin-top:.8em;">
+        Both maintain low mean errors over resolved scales
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 31 — From NN to Neural Operators
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>From Neural Networks to Neural Operators</h2>
+  <div class="cols">
+    <div class="col-60">
+      <img src="images/image51.png" alt="NN vs NO comparison" class="slide-img"/>
+    </div>
+    <div class="col-40">
+      <div class="card">
+        <h3>Neural Networks</h3>
+        <p>Learn a function: <em>y = f(x)</em></p>
+        <p style="color:var(--muted);">Vectors → Vectors</p>
+      </div>
+      <div class="card" style="margin-top:.6em; border-color:rgba(167,139,250,.4);">
+        <h3>Neural Operators</h3>
+        <p>Learn an operator: <em>u = G(a)</em></p>
+        <p style="color:var(--accent2);">Functions → Functions</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 32 — FNO Autoregressive
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>FNO (DKD Predictor): Autoregressive Prediction</h2>
+  <div class="cols">
+    <div class="col-60">
+      <img src="images/image52.png" alt="FNO prediction diagram" class="slide-img"/>
+    </div>
+    <div class="col-40">
+      <div class="eq">
+        <em>ψ<sub>t+1</sub> = ψ<sub>t</sub> + N<sub>θ</sub>(ψ<sub>t</sub>, a)</em>
+      </div>
+      <div class="card" style="margin-top:.6em;">
+        <p><strong>DKD</strong> = Drift–Kick–Drift (traditional FDM method)</p>
+        <p>FNO models the correction step</p>
+      </div>
+      <div class="key-result" style="margin-top:.6em;">
+        Completely independent method — possible inference speed-up for unseen IC realizations!
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 33 — Autoregressive FNO Results
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Autoregressive FNO Results: Unseen Test Realization</h2>
+  <div class="cols">
+    <div class="col">
+      <img src="images/image53.png" alt="FNO real vs generated" class="slide-img"/>
+    </div>
+  </div>
+  <div class="key-result" style="text-align:center; margin-top:.8em;">
+    Trained on 400 steps, tested to 500 steps — <strong>maximum error ≈ 6%</strong>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 34 — Takeaways
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Takeaways</h2>
+  <div class="cols" style="gap:1.2em;">
+    <div class="col">
+      <div class="card" style="text-align:center; padding:1.2em; border-color:rgba(94,156,245,.5);">
+        <div class="badge" style="margin:0 auto .6em;">01</div>
+        <p>PINNs &amp; FNOs as <strong>independent methods</strong> to generate WDM sims from scratch</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card" style="text-align:center; padding:1.2em; border-color:rgba(167,139,250,.5);">
+        <div class="badge" style="margin:0 auto .6em; background:linear-gradient(135deg,var(--accent2),#6d28d9);">02</div>
+        <p>Physically reliable <strong>high-resolution WDM sims</strong> with physics-informed generative modeling</p>
+      </div>
+    </div>
+  </div>
+  <div class="key-result" style="margin-top:1em; text-align:center; font-size:.85em;">
+    🎯 Goal: FNOs &amp; PINNs capable of generating high-resolution WDM simulations from scratch
+  </div>
+  <div class="cols" style="margin-top:.8em;">
+    <div class="col">
+      <img src="images/image54.png" alt="Result preview" class="slide-img"/>
+    </div>
+    <div class="col">
+      <img src="images/image55.png" alt="Result preview 2" class="slide-img"/>
+    </div>
+    <div class="col">
+      <img src="images/image56.png" alt="Result preview 3" class="slide-img"/>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 35 — Work in Progress
+════════════════════════════════════════════════════ -->
+<section>
+  <h2>Work in Progress</h2>
+  <p style="color:var(--muted); font-size:.75em; font-style:italic;">(Still to get to large boxes with PINNs)</p>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:.8em; margin-top:.6em;">
+    <div class="card">
+      <div style="display:flex; gap:.5em;">
+        <div class="badge">01</div>
+        <p>Neural Operators (NO) for consecutive time-step predictions: <strong>long runs</strong></p>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex; gap:.5em;">
+        <div class="badge" style="background:linear-gradient(135deg,var(--accent2),#6d28d9);">02</div>
+        <p>Reproducing <strong>Core-Halo Relations</strong> for FDM with PINNs</p>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex; gap:.5em;">
+        <div class="badge" style="background:linear-gradient(135deg,var(--gold),#d97706);">03</div>
+        <p>Physics-informed NO for <strong>painting FDM small-scale features</strong></p>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex; gap:.5em;">
+        <div class="badge" style="background:linear-gradient(135deg,#10b981,#065f46);">04</div>
+        <p>Extending <strong>Cosmo-SPINNs</strong> to larger boxes and longer time intervals</p>
+      </div>
+    </div>
+  </div>
+  <img src="images/image58.png" alt="Work in progress visual" class="slide-img-center" style="max-height:20vh; margin-top:.6em;"/>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SLIDE 36 — Thank You
+════════════════════════════════════════════════════ -->
+<section class="title-slide">
+  <div style="text-align:center; padding:1em;">
+    <img src="images/image59.png" alt="EPFL logo" style="height:3em; margin-bottom:.8em;"/>
+    <h1 style="font-size:2em;">Merci!</h1>
+    <h2 style="font-size:1.1em; color:var(--text); margin-top:.6em;">Questions?</h2>
+    <p style="margin-top:1em;">
+      <strong>Ashutosh Kumar Mishra</strong><br/>
+      <a href="mailto:ashutosh.mishra@epfl.ch" style="color:var(--accent);">ashutosh.mishra@epfl.ch</a>
+    </p>
+    <div style="margin-top:1.2em; display:flex; gap:.6em; justify-content:center; flex-wrap:wrap;">
+      <span class="tag">arXiv link in talk</span>
+      <span class="tag tag-purple">Mishra &amp; Tolley, ApJ 2025</span>
+    </div>
+    <img src="images/image60.png" alt="QR code" style="height:6em; margin-top:1.2em; border-radius:8px;"/>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     BACKUP SLIDES
+════════════════════════════════════════════════════ -->
+<section>
+  <h2 style="color:var(--muted); font-size:1em; text-transform:uppercase; letter-spacing:.1em;">Back-up Slides</h2>
+  <div class="cols" style="margin-top:1em; justify-content:center;">
+    <div class="tag" style="font-size:.8em;">Click ↓ for backup material</div>
+  </div>
+
+  <!-- backup 1 -->
+  <section>
+    <h2>Cosmo-SPINN: Multiple Realizations (1 Mpc Boxes)</h2>
+    <div class="cols">
+      <div class="col-60">
+        <img src="images/image62.png" alt="Cosmo-SPINN results" class="slide-img"/>
+        <img src="images/image63.png" alt="Cosmo-SPINN multi IC" class="slide-img" style="margin-top:.5em;"/>
+      </div>
+      <div class="col-40">
+        <div class="card">
+          <p>Real vs Predicted R, I, V given the redshift and different initial conditions (with physics-informed loss after warm-up)</p>
+          <p style="color:var(--gold);">Good overall large scale, some hallucinations at small scales!</p>
+        </div>
+        <div class="card" style="margin-top:.5em;">
+          <img src="images/image65.png" alt="Sample" class="slide-img"/>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- backup 2 -->
+  <section>
+    <h2>Extension to Multi-Realization ICs</h2>
+    <img src="images/image66.png" alt="Multi-realization IC results" class="slide-img-center" style="max-height:55vh;"/>
+    <div class="card" style="margin-top:.8em; font-size:.68em;">
+      <p>As expected, larger scatter on large scales!</p>
+      <ul>
+        <li>AxionCAMB for Power-Spectrum (m<sub>a</sub> = 2.5×10<sup>−22</sup> eV)</li>
+        <li>JaxPM for displacement &amp; velocity fields (x, v) using LPT 2nd Order</li>
+        <li>Custom code to convert to FDM wave function Ψ</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- backup 3 — FDM Linear Power -->
+  <section>
+    <h2>Fuzzy Dark Matter: Linear Power Spectrum</h2>
+    <img src="images/image67.png" alt="FDM linear power spectrum" class="slide-img-center" style="max-height:65vh;"/>
+    <p style="text-align:center; font-size:.7em;">Linear theory predicts sharp cutoff in power spectrum due to quantum pressure</p>
+  </section>
+
+  <!-- backup 4 — Direct probe -->
+  <section>
+    <h2>Direct Probe of DM Distribution</h2>
+    <img src="images/image68.png" alt="Direct DM probe" class="slide-img-center" style="max-height:60vh;"/>
+    <p class="cite" style="text-align:center;">Bechtol et al. 2023 — Power spectrum, halo mass profile</p>
+  </section>
+
+  <!-- backup 5 — Numerical method -->
+  <section>
+    <h2>Numerical Method: 2nd Order Unitary Spectral Method</h2>
+    <div class="cols">
+      <div class="col-55">
+        <div class="card">
+          <ol style="font-size:.72em;">
+            <li><strong>Calculate potential:</strong> V = IFFT[−k⁻²·FFT(4πGm(|ψ|²−|ψ₀|²))]</li>
+            <li><strong>Half-step Kick:</strong> ψ ← exp[−i(m/ℏ)(Δt/2)V]·ψ</li>
+            <li><strong>Full-step Drift (Fourier space):</strong> ψ ← IFFT[exp(−iΔt(ℏ/m)k²/2)·FFT(ψ)]</li>
+            <li><strong>Update potential</strong></li>
+            <li><strong>Another half-step Kick:</strong> ψ ← exp[−i(m/ℏ)(Δt/2)V]·ψ</li>
+          </ol>
+        </div>
+      </div>
+      <div class="col-45">
+        <div class="eq">
+          <strong>Kick:</strong> ψ ← e<sup>−i(m/ℏ)(Δt/2)V</sup>ψ<br/><br/>
+          <strong>Drift:</strong> ψ ← IFFT[e<sup>−iΔt(ℏ/m)k²/2</sup>·FFT(ψ)]<br/><br/>
+          <strong>V:</strong> = IFFT[−k⁻²·FFT(4πGm(|ψ|²−|ψ₀|²))]
+        </div>
+        <p class="cite" style="margin-top:.5em;">Mocz et al. 2017</p>
+      </div>
+    </div>
+  </section>
+</section>
+
+</div><!-- /slides -->
+</div><!-- /reveal -->
+
+<!-- Reveal.js scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/notes/notes.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/math/math.min.js"></script>
+
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    transitionSpeed: 'default',
+    backgroundTransition: 'fade',
+    controls: true,
+    progress: true,
+    center: false,
+    width: 1280,
+    height: 720,
+    margin: 0.04,
+    plugins: [ RevealNotes, RevealHighlight, RevealMath.KaTeX ],
+    math: {
+      katexScript: 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js',
+      katexStylesheet: 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css',
+    }
+  });
+</script>
+</body>
+</html>
